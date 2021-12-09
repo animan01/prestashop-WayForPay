@@ -2,21 +2,21 @@
 require_once(dirname(__FILE__) . '../../../wayforpay.php');
 require_once(dirname(__FILE__) . '../../../wayforpay.cls.php');
 
-class WayforpayRedirectModuleFrontController extends ModuleFrontController
-{
-    public $ssl = true;
-
+class WayforpayRedirectModuleFrontController extends ModuleFrontController {
     /**
      * @see FrontController::initContent()
      */
-    public function initContent()
-    {
+    public function initContent() {
         parent::initContent();
 
         global $cookie, $link;
 
         $language = Language::getIsoById(intval($cookie->id_lang));
-        $language = (!in_array($language, array('ua', 'en', 'ru'))) ? 'ru' : $language;
+        $language = (!in_array($language, [
+            'ua',
+            'en',
+            'ru',
+        ])) ? 'ua' : $language;
         $language = strtoupper($language);
 
         $cart = $this->context->cart;
@@ -29,9 +29,8 @@ class WayforpayRedirectModuleFrontController extends ModuleFrontController
         $total = $cart->getOrderTotal();
 
 
-
-        $option = array();
-        $option['wfp_pay_plg'] = 'PrestaShop '.(defined('_PS_VERSION_')?_PS_VERSION_:'');
+        $option = [];
+        $option['wfp_pay_plg'] = 'PrestaShop ' . (defined('_PS_VERSION_') ? _PS_VERSION_ : '');
         $option['merchantAccount'] = $w4p->getOption('merchant');
         $option['orderDate'] = strtotime($cart->date_add);
         $option['merchantAuthType'] = 'simpleSignature';
@@ -43,12 +42,16 @@ class WayforpayRedirectModuleFrontController extends ModuleFrontController
         $option['serviceUrl'] = $link->getModuleLink('wayforpay', 'callback');
         $option['returnUrl'] = $link->getModuleLink('wayforpay', 'result');
 
-        $productNames = array();
-        $productPrices = array();
-        $productQty = array();
+        $productNames = [];
+        $productPrices = [];
+        $productQty = [];
 
         foreach ($cart->getProducts() as $product) {
-            $productNames[] = str_replace(["'", '"', '&#39;'], ['', '', ''], htmlspecialchars_decode($product['name']));
+            $productNames[] = str_replace(["'", '"', '&#39;'], [
+                '',
+                '',
+                '',
+            ], htmlspecialchars_decode($product['name']));
             $productPrices[] = $product['total_wt'];
             $productQty[] = $product['quantity'];
         }
@@ -63,10 +66,16 @@ class WayforpayRedirectModuleFrontController extends ModuleFrontController
             /**
              * Check phone
              */
-            $phone = str_replace(array('+', ' ', '(', ')'), array('', '', '', ''), $address->phone_mobile);
+            $phone = str_replace(['+', ' ', '(', ')'], [
+                '',
+                '',
+                '',
+                '',
+            ], $address->phone_mobile);
             if (strlen($phone) == 10) {
                 $phone = '38' . $phone;
-            } elseif (strlen($phone) == 11) {
+            }
+            elseif (strlen($phone) == 11) {
                 $phone = '3' . $phone;
             }
 
@@ -84,7 +93,7 @@ class WayforpayRedirectModuleFrontController extends ModuleFrontController
 
         $url = WayForPayCls::URL;
 
-        $this->context->smarty->assign(array('fields' => $option, 'url' => $url));
-        $this->setTemplate('redirect.tpl');
+        $this->context->smarty->assign(['fields' => $option, 'url' => $url]);
+        $this->setTemplate('module:wayforpay/views/templates/front/redirect.tpl');
     }
 }

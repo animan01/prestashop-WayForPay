@@ -1,17 +1,18 @@
 <?php
 
-class Wayforpay extends PaymentModule
-{
-    private $settingsList = array(
-        'WAYFORPAY_MERCHANT',
-        'WAYFORPAY_SECRET_KEY'
-    );
+use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 
-    public function __construct()
-    {
+class Wayforpay extends PaymentModule {
+
+    private $settingsList = [
+        'WAYFORPAY_MERCHANT',
+        'WAYFORPAY_SECRET_KEY',
+    ];
+
+    public function __construct() {
         $this->name = 'wayforpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0';
+        $this->version = '1.1.0';
         $this->author = 'WayForPay';
 
         parent::__construct();
@@ -20,34 +21,34 @@ class Wayforpay extends PaymentModule
         $this->confirmUninstall = $this->l('Действительно хотите удалить модуль?');
     }
 
-    public function install()
-    {
-        if (!parent::install() OR !$this->registerHook('payment')) {
-            return false;
+    public function install() {
+        if (!parent::install() or
+            !$this->registerHook('payment') or
+            !$this->registerHook('displayPayment') or
+            !$this->registerHook('displayPaymentTop') or
+            !$this->registerHook('paymentOptions')) {
+            return FALSE;
         }
-        return true;
+        return TRUE;
     }
 
-    public function uninstall()
-    {
+    public function uninstall() {
         foreach ($this->settingsList as $val) {
             if (!Configuration::deleteByName($val)) {
-                return false;
+                return FALSE;
             }
         }
         if (!parent::uninstall()) {
-            return false;
+            return FALSE;
         }
-        return true;
+        return TRUE;
     }
 
-    public function getOption($name)
-    {
+    public function getOption($name) {
         return trim(Configuration::get("WAYFORPAY_" . strtoupper($name)));
     }
 
-    private function _displayForm()
-    {
+    private function _displayForm() {
         $this->_html .=
             '<form action="' . Tools::htmlentitiesUTF8($_SERVER['REQUEST_URI']) . '" method="post">
 			<fieldset>
@@ -69,28 +70,28 @@ class Wayforpay extends PaymentModule
 		</form>';
     }
 
-    private function _displayWayForPay()
-    {
+    private function _displayWayForPay() {
         $this->_html .= '<img src="../modules/wayforpay/img/w4p.png" style="float:left; margin-right:15px;"><b>' .
             $this->l('This module allows you to accept payments by WayForPay.') . '</b><br /><br />' .
             $this->l('If the client chooses this payment mode, the order will change its status into a \'Waiting for payment\' status.') .
             '<br /><br /><br />';
     }
 
-    public function getContent()
-    {
+    public function getContent() {
         $this->_html = '<h2>' . $this->displayName . '</h2>';
 
         if (Tools::isSubmit('btnSubmit')) {
             $this->_postValidation();
             if (!sizeof($this->_postErrors)) {
                 $this->_postProcess();
-            } else {
-                foreach ($this->_postErrors AS $err) {
+            }
+            else {
+                foreach ($this->_postErrors as $err) {
                     $this->_html .= '<div class="alert error">' . $err . '</div>';
                 }
             }
-        } else {
+        }
+        else {
             $this->_html .= '<br />';
         }
         $this->_displayWayForPay();
@@ -98,16 +99,13 @@ class Wayforpay extends PaymentModule
         return $this->_html;
     }
 
-
-    private function _postValidation()
-    {
+    private function _postValidation() {
         if (Tools::isSubmit('btnSubmit')) {
             /*$this->_postErrors[] = $this->l('Account details are required.');*/
         }
     }
 
-    private function _postProcess()
-    {
+    private function _postProcess() {
         if (Tools::isSubmit('btnSubmit')) {
             Configuration::updateValue('WAYFORPAY_MERCHANT', Tools::getValue('merchant'));
             Configuration::updateValue('WAYFORPAY_SECRET_KEY', Tools::getValue('secret_key'));
@@ -117,34 +115,47 @@ class Wayforpay extends PaymentModule
 
     # Display
 
-    public function hookPayment($params)
-    {
-        if (!$this->active) return;
-        if (!$this->_checkCurrency($params['cart'])) return;
+    /* Prestashop 1.7.x.x */
+    public function hookPaymentOptions($params) {
+        if (!$this->active) {
+            return;
+        }
+        if (!$this->_checkCurrency($params['cart'])) {
+            return;
+        }
 
         global $smarty;
-        $smarty->assign(array(
+        $smarty->assign([
             'this_path' => $this->_path,
-            'id' => (int)$params['cart']->id,
-            'this_path_ssl' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/',
-            'this_description' => 'Оплата через систему WayForPay'
-        ));
+            'id' => (int) $params['cart']->id,
+            'this_path_ssl' => Tools::getShopDomainSsl(TRUE, TRUE) . __PS_BASE_URI__ . 'modules/' . $this->name . '/',
+            'this_description' => 'Оплата через систему WayForPay',
+        ]);
+        $cart_id = Context::getContext()->cart->id;
 
-        return $this->display(__FILE__, 'wayforpay.tpl');
+        $newOption = new PaymentOption();
+        $newOption->setModuleName($this->name)
+            ->setCallToActionText($this->trans('Wayforpay', [], 'Modules.Wayforpay.Shop'))
+            ->setAction($this->context->link->getModuleLink('wayforpay', 'redirect', ['id_cart' => $cart_id]))
+            ->setAdditionalInformation($this->fetch('module:wayforpay/wayforpay.tpl'));
+        $payment_options = [
+            $newOption,
+        ];
+
+        return $payment_options;
     }
 
-    private function _checkCurrency($cart)
-    {
-        $currency_order = new Currency((int)($cart->id_currency));
-        $currencies_module = $this->getCurrency((int)$cart->id_currency);
+    private function _checkCurrency($cart) {
+        $currency_order = new Currency((int) ($cart->id_currency));
+        $currencies_module = $this->getCurrency((int) $cart->id_currency);
 
         if (is_array($currencies_module)) {
-            foreach ($currencies_module AS $currency_module) {
+            foreach ($currencies_module as $currency_module) {
                 if ($currency_order->id == $currency_module['id_currency']) {
-                    return true;
+                    return TRUE;
                 }
             }
         }
-        return false;
+        return FALSE;
     }
 }

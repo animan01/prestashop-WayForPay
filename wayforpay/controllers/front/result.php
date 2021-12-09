@@ -3,17 +3,16 @@
 require_once(dirname(__FILE__) . '../../../wayforpay.php');
 require_once(dirname(__FILE__) . '../../../wayforpay.cls.php');
 
-class WayforpayResultModuleFrontController extends ModuleFrontController
-{
+class WayforpayResultModuleFrontController extends ModuleFrontController {
+
     /**
      * @see FrontController::postProcess()
      */
-    public function postProcess()
-    {
+    public function postProcess() {
 
         $data = $_POST;
 
-        $order_id = !empty($data['orderReference']) ? $data['orderReference'] : null;
+        $order_id = !empty($data['orderReference']) ? $data['orderReference'] : NULL;
         $order = new OrderCore(intval($order_id));
         if (!Validate::isLoadedObject($order)) {
             die('Заказ не найден');
@@ -22,7 +21,7 @@ class WayforpayResultModuleFrontController extends ModuleFrontController
         $wayForPayCls = new WayForPayCls();
 
         $isPaymentValid = $wayForPayCls->isPaymentValid($data);
-        if ($isPaymentValid !== true) {
+        if ($isPaymentValid !== TRUE) {
             $this->errors[] = Tools::displayError($isPaymentValid);
         }
 
@@ -32,17 +31,17 @@ class WayforpayResultModuleFrontController extends ModuleFrontController
         }
 
         if (empty($this->errors)) {
-//
-//            list($orderId,) = explode(WayForPayCls::ORDER_SEPARATOR, $data['orderReference']);
-//            $history = new OrderHistory();
-//            $history->id_order = $orderId;
-//            $history->changeIdOrderState((int)Configuration::get('PS_OS_PAYMENT'), $orderId);
-//            $history->addWithemail(true, array(
-//                'order_name' => $orderId
-//            ));
-//
-            return Tools::redirect('index.php?controller=order-confirmation&id_cart=' . $order->id_cart . '&id_module=' . $this->module->id . '&id_order=' . $this->module->currentOrder);
-        }
+            //
+            //            list($orderId,) = explode(WayForPayCls::ORDER_SEPARATOR, $data['orderReference']);
+            //            $history = new OrderHistory();
+            //            $history->id_order = $orderId;
+            //            $history->changeIdOrderState((int)Configuration::get('PS_OS_PAYMENT'), $orderId);
+            //            $history->addWithemail(true, array(
+            //                'order_name' => $orderId
+            //            ));
+            //
 
+            Tools::redirectLink(__PS_BASE_URI__ . 'order-confirmation?key=' . $customer->secure_key . '&id_cart=' . $order->id_cart . '&id_module=' . $this->module->id . '&id_order=' . $order->id);
+        }
     }
 }
