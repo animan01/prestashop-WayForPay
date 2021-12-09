@@ -4,6 +4,17 @@ require_once(dirname(__FILE__) . '../../../wayforpay.php');
 require_once(dirname(__FILE__) . '../../../wayforpay.cls.php');
 
 class WayforpayCallbackModuleFrontController extends ModuleFrontController {
+
+    public $display_column_left = FALSE;
+
+    public $display_column_right = FALSE;
+
+    public $display_header = FALSE;
+
+    public $display_footer = FALSE;
+
+    public $ssl = TRUE;
+
     /**
      * @see FrontController::postProcess()
      */

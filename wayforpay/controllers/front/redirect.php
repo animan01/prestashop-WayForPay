@@ -3,6 +3,9 @@ require_once(dirname(__FILE__) . '../../../wayforpay.php');
 require_once(dirname(__FILE__) . '../../../wayforpay.cls.php');
 
 class WayforpayRedirectModuleFrontController extends ModuleFrontController {
+
+    public $ssl = TRUE;
+
     /**
      * @see FrontController::initContent()
      */
